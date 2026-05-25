@@ -9,6 +9,9 @@
 <title>Parker</title>
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
+  .emoji { font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif; }
+</style>
+<style>
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 :root {
   --bg:     #f5f2ee;
@@ -179,7 +182,7 @@ html,body { height:100%; background:#f5f2ee !important; color:#1c1a17 !important
 /* Profile card */
 .profile-card { background:var(--card); border:1px solid var(--border); border-radius:var(--r); padding:20px; margin-bottom:16px; display:flex; align-items:center; gap:16px; }
 .avatar-wrap { position:relative; cursor:pointer; }
-.avatar-circle { width:56px; height:56px; border-radius:50%; background:var(--accent); display:flex; align-items:center; justify-content:center; font-size:26px; border:2px solid var(--border); flex-shrink:0; }
+.avatar-circle { width:56px; height:56px; border-radius:50%; background:var(--accent); display:flex; align-items:center; justify-content:center; font-size:26px; border:2px solid var(--border); flex-shrink:0; font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif; }
 .avatar-edit { position:absolute; bottom:-2px; right:-2px; width:18px; height:18px; background:var(--white); border:1px solid var(--border); border-radius:50%; display:flex; align-items:center; justify-content:center; }
 .avatar-edit svg { width:10px; height:10px; stroke:var(--sub); }
 .profile-info { flex:1; }
@@ -325,7 +328,7 @@ html,body { height:100%; background:#f5f2ee !important; color:#1c1a17 !important
     <!-- Profile -->
     <div class="profile-card">
       <div class="avatar-wrap" onclick="openEmojiSheet()">
-        <div class="avatar-circle" id="avatar-display">🦁</div>
+        <div class="avatar-circle emoji" id="avatar-display">🦁</div>
         <div class="avatar-edit"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></div>
       </div>
       <div class="profile-info">
@@ -542,7 +545,7 @@ async function init() {
       sbGetConfig('avatar')
     ]);
     budget = parseFloat(bv||'0');
-    profile.name   = uname  || 'Diego';
+    profile.name   = uname  || 'Fernanda';
     profile.avatar = uavatar|| '🦁';
 
     setSyncStatus('ok');
@@ -596,7 +599,7 @@ function renderHome() {
   const isNow = cur.getFullYear()===n.getFullYear()&&cur.getMonth()===n.getMonth();
 
   // Greeting header
-  const greet = profile.name ? `Hola, ${profile.name.split(' ')[0]} ${profile.avatar}` : 'Mis gastos';
+  const greet = profile.name ? `Hola, ${profile.name.split(' ')[0]}` : 'Mis gastos';
   document.getElementById('home-title').textContent = greet;
 
   document.getElementById('mname').textContent   = MONTHS[cur.getMonth()]+' '+cur.getFullYear();
