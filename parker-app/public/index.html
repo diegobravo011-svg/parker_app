@@ -183,6 +183,49 @@ html,body { height:100%; background:#f5f2ee !important; color:#1c1a17 !important
 .catbvtrack { height:4px; background:var(--pill); border-radius:2px; overflow:hidden; }
 .catbvfill { height:100%; border-radius:2px; transition:width .5s; }
 
+/* ── TICKER ─────────────────────────────────────────────────────────────── */
+.ticker-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; padding:0 22px 16px; }
+.ticker-card { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:12px 14px; display:flex; align-items:center; gap:10px; }
+.ticker-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+.ticker-dot.btc { background:#f7931a; }
+.ticker-dot.usd { background:#2ecc71; }
+.ticker-info { flex:1; min-width:0; }
+.ticker-label { font-size:10px; font-weight:600; color:var(--sub); letter-spacing:.3px; text-transform:uppercase; }
+.ticker-val { font-size:15px; font-weight:700; letter-spacing:-.4px; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.ticker-chg { font-size:10px; font-weight:600; margin-top:1px; }
+.ticker-chg.up { color:var(--green); }
+.ticker-chg.dn { color:var(--red); }
+.ticker-loading { font-size:12px; color:var(--sub2); }
+
+/* ── INVERSIONES ─────────────────────────────────────────────────────────── */
+.inv-wrap { margin:0 22px 20px; }
+.inv-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+.inv-title { font-size:16px; font-weight:600; letter-spacing:-.2px; }
+.inv-addbtn { display:flex; align-items:center; gap:5px; padding:6px 12px; background:var(--accent); color:var(--white); border:none; border-radius:50px; font-family:var(--f); font-size:12px; font-weight:600; cursor:pointer; }
+.inv-addbtn svg { width:12px; height:12px; stroke:var(--white); }
+.inv-summary { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px; }
+.inv-sum-card { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:12px; }
+.inv-sum-lbl { font-size:10px; font-weight:500; color:var(--sub); letter-spacing:.3px; text-transform:uppercase; margin-bottom:4px; }
+.inv-sum-val { font-size:18px; font-weight:700; letter-spacing:-.5px; }
+.inv-sum-val.pos { color:var(--green); }
+.inv-sum-val.neg { color:var(--red); }
+.inv-list { display:flex; flex-direction:column; gap:6px; }
+.inv-item { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:12px 14px; display:flex; align-items:center; gap:10px; }
+.inv-icon { width:34px; height:34px; border-radius:9px; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:16px; font-family:"Apple Color Emoji",sans-serif; }
+.inv-info { flex:1; min-width:0; }
+.inv-name { font-size:13px; font-weight:600; }
+.inv-date { font-size:11px; color:var(--sub); margin-top:1px; }
+.inv-right { text-align:right; }
+.inv-amt { font-size:14px; font-weight:700; letter-spacing:-.3px; }
+.inv-roi { font-size:10px; font-weight:600; margin-top:2px; }
+.inv-roi.pos { color:var(--green); }
+.inv-roi.neg { color:var(--red); }
+
+/* Investment sheet selectors */
+.asset-grid { display:flex; flex-wrap:wrap; gap:7px; margin-bottom:16px; }
+.asset-chip { display:flex; align-items:center; gap:6px; padding:8px 14px; border-radius:50px; border:1.5px solid var(--border); background:none; font-family:var(--f); font-size:12px; font-weight:600; cursor:pointer; color:var(--text); transition:all .12s; }
+.asset-chip.sel { background:var(--accent); border-color:var(--accent); color:var(--white); }
+
 /* ── SETTINGS ──────────────────────────────────────────────────────────── */
 .settings-view { padding:0 22px 0; }
 .sv-hdr { padding:52px 0 24px; }
@@ -308,6 +351,48 @@ html,body { height:100%; background:#f5f2ee !important; color:#1c1a17 !important
   <div class="catstrip" id="cat-strip"></div>
   <div class="sechdr"><div class="sectit">Recientes</div><button class="seeall" onclick="switchView('history')">Ver todo</button></div>
   <div class="txngroup" id="recent-list"></div>
+
+  <!-- TICKER BTC + USD -->
+  <div class="ticker-row" id="ticker-row">
+    <div class="ticker-card">
+      <div class="ticker-dot btc"></div>
+      <div class="ticker-info">
+        <div class="ticker-label">Bitcoin</div>
+        <div class="ticker-val" id="btc-price"><span class="ticker-loading">…</span></div>
+        <div class="ticker-chg" id="btc-chg"></div>
+      </div>
+    </div>
+    <div class="ticker-card">
+      <div class="ticker-dot usd"></div>
+      <div class="ticker-info">
+        <div class="ticker-label">USD / CLP</div>
+        <div class="ticker-val" id="usd-clp"><span class="ticker-loading">…</span></div>
+        <div class="ticker-chg" id="usd-chg"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- INVERSIONES -->
+  <div class="inv-wrap">
+    <div class="inv-header">
+      <div class="inv-title">Inversiones</div>
+      <button class="inv-addbtn" onclick="openInvSheet()">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Agregar
+      </button>
+    </div>
+    <div class="inv-summary">
+      <div class="inv-sum-card">
+        <div class="inv-sum-lbl">Total invertido</div>
+        <div class="inv-sum-val" id="inv-total">$0</div>
+      </div>
+      <div class="inv-sum-card">
+        <div class="inv-sum-lbl">Retorno BTC</div>
+        <div class="inv-sum-val" id="inv-roi">—</div>
+      </div>
+    </div>
+    <div class="inv-list" id="inv-list"></div>
+  </div>
 </div>
 
 <!-- HISTORY -->
@@ -470,6 +555,21 @@ html,body { height:100%; background:#f5f2ee !important; color:#1c1a17 !important
   <div class="emoji-grid" id="emoji-grid"></div>
 </div>
 
+<!-- INVESTMENT SHEET -->
+<div class="overlay" id="inv-overlay" onclick="closeInvSheet()"></div>
+<div class="sheet" id="inv-sheet">
+  <div class="shandle"></div>
+  <div class="shtitle">Nueva inversión</div>
+  <div class="amtwrap">
+    <span class="amtpfx">$</span>
+    <input class="amtinput" type="number" id="inv-amt" placeholder="0" inputmode="decimal" min="0">
+  </div>
+  <div style="font-size:11px;font-weight:600;color:var(--sub);letter-spacing:.4px;text-transform:uppercase;margin-bottom:8px">Activo</div>
+  <div class="asset-grid" id="asset-grid"></div>
+  <input class="notefield" type="text" id="inv-note" placeholder="Ej: Compra mensual, Fondo mutuo…">
+  <button class="addbtn" onclick="submitInvestment()">Registrar inversión</button>
+</div>
+
 <div class="toast" id="toastel"></div>
 
 <script>
@@ -570,6 +670,10 @@ async function init() {
   renderSheetCats();
   renderHome();
   updateProfileUI();
+
+  // Load investments + ticker in parallel (non-blocking)
+  loadInvestments();
+  fetchTicker();
 
   // Hide loading
   const ls = document.getElementById('loading-screen');
@@ -945,6 +1049,166 @@ function showToast(msg) {
   const el=document.getElementById('toastel');
   el.textContent=msg; el.classList.add('show');
   setTimeout(()=>el.classList.remove('show'),2200);
+}
+
+// ── Investments ───────────────────────────────────────────────────────────────
+const ASSETS = [
+  { id:'BTC',     name:'Bitcoin',    emoji:'₿',  bg:'#fef3e2', color:'#f7931a' },
+  { id:'ETF',     name:'ETF',        emoji:'📈', bg:'#eaf3ea', color:'#7aaa8a' },
+  { id:'Acciones',name:'Acciones',   emoji:'🏦', bg:'#f0ecf6', color:'#9b8fb0' },
+  { id:'FFMM',    name:'F. Mutuo',   emoji:'💼', bg:'#eceff5', color:'#8899b0' },
+  { id:'Crypto',  name:'Cripto',     emoji:'🔷', bg:'#e8f0fe', color:'#4a90d9' },
+  { id:'Otro',    name:'Otro',       emoji:'💰', bg:'#f5f0e8', color:'#b0a088' },
+];
+function getAsset(id) { return ASSETS.find(a=>a.id===id)||ASSETS[ASSETS.length-1]; }
+
+let investments = [];
+let sAsset = 'BTC';
+let btcPriceUsd = 0;
+let usdClp = 0;
+
+// Load investments from Supabase
+async function loadInvestments() {
+  try {
+    const data = await sbGet('investments', 'order=id.desc');
+    investments = data.map(r=>({
+      id: r.id, date: r.date, amount: parseFloat(r.amount),
+      asset: r.asset, notes: r.notes||'', btc_price_usd: r.btc_price_usd ? parseFloat(r.btc_price_usd) : null
+    }));
+  } catch(e) { console.warn('Could not load investments', e); }
+  renderInvestments();
+}
+
+// Fetch BTC price + USD/CLP from CoinGecko
+async function fetchTicker() {
+  try {
+    const r = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd,clp&include_24hr_change=true');
+    if (!r.ok) throw new Error();
+    const d = await r.json();
+    const btc = d.bitcoin;
+    btcPriceUsd = btc.usd;
+    usdClp = Math.round(btc.clp / btc.usd);
+
+    // BTC card
+    const btcChg = btc.usd_24h_change;
+    document.getElementById('btc-price').textContent = '$' + btc.usd.toLocaleString('en-US');
+    const btcChgEl = document.getElementById('btc-chg');
+    btcChgEl.textContent = (btcChg>=0?'▲':'▼') + Math.abs(btcChg).toFixed(2) + '% hoy';
+    btcChgEl.className = 'ticker-chg ' + (btcChg>=0?'up':'dn');
+
+    // USD/CLP card
+    document.getElementById('usd-clp').textContent = '$' + usdClp.toLocaleString('es-CL');
+    document.getElementById('usd-chg').textContent = 'Tasa de cambio';
+    document.getElementById('usd-chg').className = 'ticker-chg';
+
+    // Refresh ROI in investment section
+    renderInvestments();
+  } catch(e) {
+    document.getElementById('btc-price').textContent = 'Sin datos';
+    document.getElementById('usd-clp').textContent = 'Sin datos';
+  }
+}
+
+// Render investment list + summary
+function renderInvestments() {
+  const total = investments.reduce((s,i)=>s+i.amount, 0);
+  document.getElementById('inv-total').textContent = fmtF(total);
+
+  // BTC ROI calculation
+  const btcInvs = investments.filter(i=>i.asset==='BTC' && i.btc_price_usd);
+  let roiHtml = '—';
+  if (btcInvs.length && btcPriceUsd > 0) {
+    let totalBtcUnits = 0;
+    let totalBtcInvested = 0;
+    btcInvs.forEach(i => {
+      const units = i.amount / (i.btc_price_usd * (usdClp||1));
+      totalBtcUnits += units;
+      totalBtcInvested += i.amount;
+    });
+    const currentVal = totalBtcUnits * btcPriceUsd * usdClp;
+    const gain = currentVal - totalBtcInvested;
+    const pct = (gain / totalBtcInvested * 100).toFixed(1);
+    const roiEl = document.getElementById('inv-roi');
+    roiEl.textContent = (gain>=0?'+':'')+fmtS(gain);
+    roiEl.className = 'inv-sum-val ' + (gain>=0?'pos':'neg');
+  } else {
+    document.getElementById('inv-roi').textContent = '—';
+    document.getElementById('inv-roi').className = 'inv-sum-val';
+  }
+
+  const listEl = document.getElementById('inv-list');
+  if (!investments.length) {
+    listEl.innerHTML = `<div style="padding:14px 0;color:var(--sub);font-size:13px;text-align:center">Sin inversiones registradas</div>`;
+    return;
+  }
+  listEl.innerHTML = investments.slice(0,5).map(inv => {
+    const a = getAsset(inv.asset);
+    let roiTxt = '';
+    if (inv.asset==='BTC' && inv.btc_price_usd && btcPriceUsd>0) {
+      const units = inv.amount / (inv.btc_price_usd * (usdClp||1));
+      const curVal = units * btcPriceUsd * usdClp;
+      const g = curVal - inv.amount;
+      const gp = (g/inv.amount*100).toFixed(1);
+      roiTxt = `<div class="inv-roi ${g>=0?'pos':'neg'}">${g>=0?'▲':'▼'} ${Math.abs(gp)}% retorno</div>`;
+    }
+    return `<div class="inv-item">
+      <div class="inv-icon" style="background:${a.bg}">${a.emoji}</div>
+      <div class="inv-info">
+        <div class="inv-name">${inv.notes||a.name}</div>
+        <div class="inv-date">${a.name} · ${inv.date}</div>
+      </div>
+      <div class="inv-right">
+        <div class="inv-amt">${fmtF(inv.amount)}</div>
+        ${roiTxt}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// Investment sheet
+function renderAssetGrid() {
+  document.getElementById('asset-grid').innerHTML = ASSETS.map(a=>`
+    <button class="asset-chip ${sAsset===a.id?'sel':''}" onclick="sAsset='${a.id}';renderAssetGrid()">
+      <span style="font-family:'Apple Color Emoji',sans-serif">${a.emoji}</span> ${a.name}
+    </button>`).join('');
+}
+
+function openInvSheet() {
+  document.getElementById('inv-sheet').classList.add('open');
+  document.getElementById('inv-overlay').classList.add('open');
+  renderAssetGrid();
+  setTimeout(()=>document.getElementById('inv-amt').focus(), 300);
+}
+function closeInvSheet() {
+  document.getElementById('inv-sheet').classList.remove('open');
+  document.getElementById('inv-overlay').classList.remove('open');
+}
+
+async function submitInvestment() {
+  const amt = parseFloat(document.getElementById('inv-amt').value);
+  const note = document.getElementById('inv-note').value.trim();
+  if (!amt||amt<=0) { showToast('Ingresa un monto'); return; }
+
+  const inv = {
+    id: Date.now(),
+    date: todayStr(),
+    amount: amt,
+    asset: sAsset,
+    notes: note,
+    btc_price_usd: sAsset==='BTC' && btcPriceUsd > 0 ? btcPriceUsd : null
+  };
+
+  investments.unshift(inv);
+  try {
+    await sbInsert('investments', inv);
+  } catch(e) { console.warn('Error saving investment', e); }
+
+  document.getElementById('inv-amt').value = '';
+  document.getElementById('inv-note').value = '';
+  sAsset = 'BTC';
+  closeInvSheet();
+  showToast('Inversión registrada ✓');
+  renderInvestments();
 }
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
