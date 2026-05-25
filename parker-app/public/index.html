@@ -96,10 +96,19 @@ html,body { height:100%; background:#f5f2ee !important; color:#1c1a17 !important
 .catchip-name { font-size:10px; font-weight:500; color:var(--sub); }
 .catchip-amt { font-size:12px; font-weight:700; color:var(--text); }
 
-/* Transactions */
+/* Transactions — swipeable */
 .txngroup { padding:0 22px; }
-.txncard { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:13px 14px; display:flex; align-items:center; gap:12px; margin-bottom:6px; animation:fadeUp .18s ease; }
 @keyframes fadeUp { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+
+/* Swipe wrapper */
+.swipe-wrap { position:relative; margin-bottom:6px; border-radius:14px; overflow:hidden; animation:fadeUp .18s ease; }
+.swipe-actions { position:absolute; inset:0; display:flex; pointer-events:none; }
+.swipe-action-left { flex:1; display:flex; align-items:center; padding-left:18px; background:var(--green); opacity:0; transition:opacity .15s; }
+.swipe-action-left svg { width:20px; height:20px; stroke:#fff; }
+.swipe-action-right { flex:1; display:flex; align-items:center; justify-content:flex-end; padding-right:18px; background:var(--red); opacity:0; transition:opacity .15s; }
+.swipe-action-right svg { width:20px; height:20px; stroke:#fff; }
+.swipe-card { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:13px 14px; display:flex; align-items:center; gap:12px; position:relative; z-index:1; transition:transform .2s cubic-bezier(.25,.46,.45,.94); touch-action:pan-y; will-change:transform; }
+.swipe-card.swiping { transition:none; }
 .txnicon { width:40px; height:40px; border-radius:11px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
 .txnicon svg { width:17px; height:17px; }
 .txninfo { flex:1; min-width:0; }
@@ -107,15 +116,24 @@ html,body { height:100%; background:#f5f2ee !important; color:#1c1a17 !important
 .txncat { font-size:11px; color:var(--sub); font-weight:400; margin-top:2px; }
 .txnright { text-align:right; flex-shrink:0; }
 .txnamt { font-size:15px; font-weight:700; letter-spacing:-.3px; }
-.txnamt.exp { color:var(--text); }
-.txnamt.inc { color:var(--green); }
-.txndel { background:none; border:none; cursor:pointer; margin-top:4px; display:flex; justify-content:flex-end; }
-.txndel svg { width:11px; height:11px; stroke:var(--sub2); }
-.txndel:hover svg { stroke:var(--red); }
+.txnamt.gasto { color:var(--text); }
+.txnamt.ingreso { color:var(--green); }
 .empty-wrap { display:flex; flex-direction:column; align-items:center; padding:50px 24px; gap:10px; }
 .empty-icon svg { width:34px; height:34px; stroke:var(--sub2); }
 .empty-t { font-size:15px; font-weight:600; }
 .empty-s { font-size:13px; color:var(--sub); }
+
+/* Section separator with subtitle */
+.sec-divider { padding:20px 22px 4px; }
+.sec-divider-line { height:1px; background:var(--border); margin-bottom:16px; }
+.sec-subtitle { font-size:12px; font-weight:600; color:var(--sub); letter-spacing:.5px; text-transform:uppercase; padding:0 22px 10px; }
+
+/* Edit sheet */
+.edit-sheet-field { width:100%; border:1.5px solid var(--border); border-radius:12px; padding:12px 14px; font-family:var(--f); font-size:14px; color:var(--text); background:var(--bg); outline:none; margin-bottom:12px; transition:border-color .12s; }
+.edit-sheet-field:focus { border-color:var(--b2); }
+.edit-row { display:flex; gap:8px; margin-bottom:12px; }
+.edit-btn-cancel { flex:1; padding:13px; background:var(--pill); color:var(--text); border:none; border-radius:14px; font-family:var(--f); font-size:14px; font-weight:600; cursor:pointer; }
+.edit-btn-save { flex:2; padding:13px; background:var(--accent); color:var(--white); border:none; border-radius:14px; font-family:var(--f); font-size:14px; font-weight:700; cursor:pointer; }
 
 /* Bottom nav */
 .botnav { position:fixed; bottom:0; left:50%; transform:translateX(-50%); width:100%; max-width:390px; background:var(--white); border-top:1px solid var(--border); display:flex; align-items:center; padding:8px 12px 28px; gap:2px; z-index:50; }
@@ -352,6 +370,10 @@ html,body { height:100%; background:#f5f2ee !important; color:#1c1a17 !important
   <div class="sechdr"><div class="sectit">Recientes</div><button class="seeall" onclick="switchView('history')">Ver todo</button></div>
   <div class="txngroup" id="recent-list"></div>
 
+  <!-- SEPARADOR + INDICADORES -->
+  <div class="sec-divider"><div class="sec-divider-line"></div></div>
+  <div class="sec-subtitle">Indicadores</div>
+
   <!-- TICKER BTC + USD -->
   <div class="ticker-row" id="ticker-row">
     <div class="ticker-card">
@@ -372,10 +394,13 @@ html,body { height:100%; background:#f5f2ee !important; color:#1c1a17 !important
     </div>
   </div>
 
+  <!-- SEPARADOR + MIS INVERSIONES -->
+  <div class="sec-subtitle" style="padding-top:8px">Mis inversiones</div>
+
   <!-- INVERSIONES -->
   <div class="inv-wrap">
     <div class="inv-header">
-      <div class="inv-title">Inversiones</div>
+      <div class="inv-title"></div>
       <button class="inv-addbtn" onclick="openInvSheet()">
         <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         Agregar
@@ -570,6 +595,31 @@ html,body { height:100%; background:#f5f2ee !important; color:#1c1a17 !important
   <button class="addbtn" onclick="submitInvestment()">Registrar inversión</button>
 </div>
 
+<!-- EDIT TRANSACTION SHEET -->
+<div class="overlay" id="edit-overlay" onclick="closeEditSheet()"></div>
+<div class="sheet" id="edit-sheet">
+  <div class="shandle"></div>
+  <div class="shtitle">Editar registro</div>
+  <div class="typerow">
+    <button class="typechip exp sel" id="edit-chip-exp" onclick="setEditType('gasto')">  
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>Gasto
+    </button>
+    <button class="typechip inc" id="edit-chip-inc" onclick="setEditType('ingreso')">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>Ingreso
+    </button>
+  </div>
+  <div class="amtwrap">
+    <span class="amtpfx">$</span>
+    <input class="amtinput" type="number" id="edit-amt" placeholder="0" inputmode="decimal" min="0">
+  </div>
+  <div class="scats" id="edit-cats"></div>
+  <input class="notefield" type="text" id="edit-note" placeholder="Descripción…">
+  <div class="edit-row">
+    <button class="edit-btn-cancel" onclick="closeEditSheet()">Cancelar</button>
+    <button class="edit-btn-save" onclick="saveEdit()">Guardar cambios</button>
+  </div>
+</div>
+
 <div class="toast" id="toastel"></div>
 
 <script>
@@ -758,33 +808,118 @@ function renderHome() {
   renderTxns([...mt].sort((a,b)=>b.id-a.id).slice(0,5),'recent-list');
 }
 
-// ── Render txns ───────────────────────────────────────────────────────────────
-function renderTxns(list, id) {
-  const el=document.getElementById(id);
+// ── Render txns (with swipe) ──────────────────────────────────────────────────
+function renderTxns(list, containerId) {
+  const el = document.getElementById(containerId);
   if (!list.length) {
-    el.innerHTML=`<div class="empty-wrap">
+    el.innerHTML = `<div class="empty-wrap">
       <div class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" stroke="var(--sub2)"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg></div>
       <div class="empty-t">Sin transacciones</div>
       <div class="empty-s">Toca + para agregar un gasto</div>
     </div>`;
     return;
   }
-  el.innerHTML=list.map(t=>{
-    const c=getCat(t.cat);
-    return `<div class="txncard">
-      <div class="txnicon" style="background:${c.bg}">${catIcon(c)}</div>
-      <div class="txninfo">
-        <div class="txnname">${t.note||c.name}</div>
-        <div class="txncat">${c.name} · ${t.date}</div>
+  el.innerHTML = list.map(t => {
+    const c = getCat(t.cat);
+    return `<div class="swipe-wrap" id="swrap-${t.id}">
+      <div class="swipe-actions">
+        <div class="swipe-action-left" id="sa-left-${t.id}">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </div>
+        <div class="swipe-action-right" id="sa-right-${t.id}">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+        </div>
       </div>
-      <div class="txnright">
-        <div class="txnamt ${t.type}">${t.type==='ingreso'?'+':'−'}${fmtF(t.amount)}</div>
-        <button class="txndel" onclick="deleteTxn(${t.id})">
-          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-        </button>
+      <div class="swipe-card" id="scard-${t.id}">
+        <div class="txnicon" style="background:${c.bg}">${catIcon(c)}</div>
+        <div class="txninfo">
+          <div class="txnname">${t.note || c.name}</div>
+          <div class="txncat">${c.name} · ${t.date}</div>
+        </div>
+        <div class="txnright">
+          <div class="txnamt ${t.type}">${t.type === 'ingreso' ? '+' : '−'}${fmtF(t.amount)}</div>
+        </div>
       </div>
     </div>`;
   }).join('');
+
+  // Attach swipe listeners
+  list.forEach(t => attachSwipe(t.id));
+}
+
+// ── Swipe logic ───────────────────────────────────────────────────────────────
+const SWIPE_THRESHOLD = 72;
+const SWIPE_CONFIRM   = 130;
+
+function attachSwipe(id) {
+  const card = document.getElementById('scard-' + id);
+  const leftBg  = document.getElementById('sa-left-' + id);
+  const rightBg = document.getElementById('sa-right-' + id);
+  if (!card) return;
+
+  let startX = 0, startY = 0, dx = 0, dragging = false, locked = false;
+
+  function onStart(e) {
+    if (locked) return;
+    const t = e.touches ? e.touches[0] : e;
+    startX = t.clientX; startY = t.clientY; dx = 0; dragging = false;
+    card.classList.add('swiping');
+  }
+  function onMove(e) {
+    if (locked) return;
+    const t = e.touches ? e.touches[0] : e;
+    const cx = t.clientX, cy = t.clientY;
+    const diffX = cx - startX, diffY = cy - startY;
+    if (!dragging && Math.abs(diffX) < 5) return;
+    if (!dragging && Math.abs(diffY) > Math.abs(diffX)) {
+      card.classList.remove('swiping'); return; // vertical scroll, ignore
+    }
+    dragging = true;
+    if (e.cancelable) e.preventDefault();
+    dx = diffX;
+    // clamp
+    dx = Math.max(-180, Math.min(60, dx));
+    card.style.transform = `translateX(${dx}px)`;
+    // show action hints
+    if (dx > 0) { // right → edit
+      leftBg.style.opacity  = Math.min(1, dx / SWIPE_THRESHOLD).toString();
+      rightBg.style.opacity = '0';
+    } else { // left → delete
+      rightBg.style.opacity = Math.min(1, -dx / SWIPE_THRESHOLD).toString();
+      leftBg.style.opacity  = '0';
+    }
+  }
+  function onEnd() {
+    if (locked) return;
+    card.classList.remove('swiping');
+    if (dx >= SWIPE_CONFIRM) {
+      // EDIT
+      locked = true;
+      card.style.transform = 'translateX(0)';
+      leftBg.style.opacity = '0'; rightBg.style.opacity = '0';
+      locked = false;
+      openEditSheet(id);
+    } else if (dx <= -SWIPE_CONFIRM) {
+      // DELETE — animate out
+      locked = true;
+      card.style.transform = 'translateX(-110%)';
+      rightBg.style.opacity = '1';
+      setTimeout(() => {
+        const wrap = document.getElementById('swrap-' + id);
+        if (wrap) { wrap.style.transition = 'max-height .25s, opacity .25s'; wrap.style.overflow = 'hidden'; wrap.style.maxHeight = '0'; wrap.style.opacity = '0'; }
+        setTimeout(() => deleteTxn(id), 260);
+      }, 160);
+    } else {
+      // snap back
+      card.style.transform = 'translateX(0)';
+      leftBg.style.opacity = '0'; rightBg.style.opacity = '0';
+    }
+    dx = 0; dragging = false;
+  }
+
+  card.addEventListener('touchstart', onStart, { passive: true });
+  card.addEventListener('touchmove',  onMove,  { passive: false });
+  card.addEventListener('touchend',   onEnd);
 }
 
 // ── History ───────────────────────────────────────────────────────────────────
@@ -833,8 +968,76 @@ async function saveBudget() {
 
 // ── Delete ────────────────────────────────────────────────────────────────────
 async function deleteTxn(id) {
-  txns=txns.filter(t=>t.id!==id);
-  try { await sbDelete('transactions', id); } catch(e) { localStorage.setItem('pk3_txns',JSON.stringify(txns)); }
+  txns = txns.filter(t => t.id !== id);
+  try { await sbDelete('transactions', id); setSyncStatus('ok'); } catch(e) { setSyncStatus('err'); localStorage.setItem('pk3_txns', JSON.stringify(txns)); }
+  renderHome(); renderHistory(); renderBudgetView();
+  showToast('Gasto eliminado');
+}
+
+// ── Edit sheet ────────────────────────────────────────────────────────────────
+let editId = null;
+let editType = 'gasto';
+let editCat = 'food';
+
+function openEditSheet(id) {
+  const txn = txns.find(t => t.id === id);
+  if (!txn) return;
+  editId   = id;
+  editType = txn.type;
+  editCat  = txn.cat;
+  document.getElementById('edit-amt').value  = txn.amount;
+  document.getElementById('edit-note').value = txn.note || '';
+  // type chips
+  setEditType(txn.type);
+  renderEditCats();
+  document.getElementById('edit-overlay').classList.add('open');
+  document.getElementById('edit-sheet').classList.add('open');
+  setTimeout(() => document.getElementById('edit-note').focus(), 300);
+}
+
+function closeEditSheet() {
+  document.getElementById('edit-overlay').classList.remove('open');
+  document.getElementById('edit-sheet').classList.remove('open');
+  editId = null;
+}
+
+function setEditType(t) {
+  editType = t;
+  document.getElementById('edit-chip-exp').className = 'typechip exp' + (t === 'gasto'    ? ' sel' : '');
+  document.getElementById('edit-chip-inc').className = 'typechip inc' + (t === 'ingreso'  ? ' sel' : '');
+}
+
+function renderEditCats() {
+  document.getElementById('edit-cats').innerHTML = CATS.map(c => `
+    <button class="scat ${editCat === c.id ? 'sel' : ''}" onclick="editCat='${c.id}';renderEditCats()">
+      ${catIcon(c, editCat === c.id ? '#fdfcfa' : c.color)} ${c.name}
+    </button>`).join('');
+}
+
+async function saveEdit() {
+  const amt  = parseFloat(document.getElementById('edit-amt').value);
+  const note = document.getElementById('edit-note').value.trim();
+  if (!amt || amt <= 0) { showToast('Ingresa un monto válido'); return; }
+
+  const idx = txns.findIndex(t => t.id === editId);
+  if (idx === -1) return;
+
+  txns[idx] = { ...txns[idx], type: editType, cat: editCat, amount: amt, note };
+
+  try {
+    setSyncStatus('loading');
+    await sbFetch(`/rest/v1/transactions?id=eq.${editId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ type: editType, cat: editCat, amount: amt, note })
+    });
+    setSyncStatus('ok');
+  } catch(e) {
+    setSyncStatus('err');
+    localStorage.setItem('pk3_txns', JSON.stringify(txns));
+  }
+
+  closeEditSheet();
+  showToast('Cambios guardados ✓');
   renderHome(); renderHistory(); renderBudgetView();
 }
 
