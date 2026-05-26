@@ -626,6 +626,24 @@ html,body { height:100%; background:#f5f2ee !important; color:#1c1a17 !important
   </div>
 </div>
 
+<!-- EDIT INVESTMENT SHEET -->
+<div class="overlay" id="edit-inv-overlay" onclick="closeEditInvSheet()"></div>
+<div class="sheet" id="edit-inv-sheet">
+  <div class="shandle"></div>
+  <div class="shtitle">Editar inversión</div>
+  <div class="amtwrap">
+    <span class="amtpfx">$</span>
+    <input class="amtinput" type="number" id="edit-inv-amt" placeholder="0" inputmode="decimal" min="0">
+  </div>
+  <div style="font-size:11px;font-weight:600;color:var(--sub);letter-spacing:.4px;text-transform:uppercase;margin-bottom:8px">Activo</div>
+  <div class="asset-grid" id="edit-asset-grid"></div>
+  <input class="notefield" type="text" id="edit-inv-note" placeholder="Ej: Compra mensual, Fondo mutuo…">
+  <div class="edit-row">
+    <button class="edit-btn-cancel" onclick="closeEditInvSheet()">Cancelar</button>
+    <button class="edit-btn-save" onclick="saveInvEdit()">Guardar</button>
+  </div>
+</div>
+
 <div class="toast" id="toastel"></div>
 
 <script>
@@ -896,11 +914,12 @@ function _swipeEnd(s) {
     s.leftBg.style.opacity = '0'; s.rightBg.style.opacity = '0';
     return;
   }
+  const isInv = s.type === 'inv';
   if (s.dx >= 80) {
-    // EDIT — threshold 80px (was 130, unreachable)
+    // EDIT
     s.card.style.transform = 'translateX(0)';
     s.leftBg.style.opacity = '0'; s.rightBg.style.opacity = '0';
-    openEditSheet(s.id);
+    if (isInv) openEditInvSheet(s.id); else openEditSheet(s.id);
   } else if (s.dx <= -100) {
     // DELETE — slide out then collapse row
     s.locked = true;
@@ -920,7 +939,7 @@ function _swipeEnd(s) {
           wrap.style.marginBottom = '0';
         });
       }
-      setTimeout(() => deleteTxn(s.id), 260);
+      setTimeout(() => isInv ? deleteInvestment(s.id) : deleteTxn(s.id), 260);
     }, 160);
   } else {
     // Snap back
@@ -929,7 +948,7 @@ function _swipeEnd(s) {
   }
 }
 
-function attachSwipe(id, pfx) {
+function attachSwipe(id, pfx, type = 'txn') {
   const card    = document.getElementById('scard-' + pfx + '-' + id);
   const leftBg  = document.getElementById('sa-left-' + pfx + '-' + id);
   const rightBg = document.getElementById('sa-right-' + pfx + '-' + id);
@@ -938,7 +957,7 @@ function attachSwipe(id, pfx) {
   // ── Mouse ──
   card.addEventListener('mousedown', (e) => {
     e.preventDefault();
-    _swipeActive = { id, pfx, card, leftBg, rightBg, startX: e.clientX, startY: e.clientY,
+    _swipeActive = { id, pfx, type, card, leftBg, rightBg, startX: e.clientX, startY: e.clientY,
                      dx: 0, dragging: false, locked: false, dirLocked: null };
     card.style.transition = 'none';
   });
@@ -947,7 +966,7 @@ function attachSwipe(id, pfx) {
   let tState = null;
   card.addEventListener('touchstart', (e) => {
     const t = e.touches[0];
-    tState = { id, pfx, card, leftBg, rightBg, startX: t.clientX, startY: t.clientY,
+    tState = { id, pfx, type, card, leftBg, rightBg, startX: t.clientX, startY: t.clientY,
                dx: 0, dragging: false, locked: false, dirLocked: null };
     card.style.transition = 'none';
   }, { passive: true });
@@ -1096,7 +1115,40 @@ async function saveEdit() {
   renderHome(); renderHistory(); renderBudgetView();
 }
 
-// ── Sheet ─────────────────────────────────────────────────────────────────────
+// ── Investment sheet (new) ──────────────────────────────────────────────────────────
+function renderAssetGrid() {
+  document.getElementById('asset-grid').innerHTML = ASSETS.map(a=>`
+    <button class="asset-chip ${sAsset===a.id?'sel':''}" onclick="sAsset='${a.id}';renderAssetGrid()">
+      <span style="font-family:'Apple Color Emoji',sans-serif">${a.emoji}</span> ${a.name}
+    </button>`).join('');
+}
+
+function openInvSheet() {
+  document.getElementById('inv-sheet').classList.add('open');
+  document.getElementById('inv-overlay').classList.add('open');
+  renderAssetGrid();
+  setTimeout(()=>document.getElementById('inv-amt').focus(), 300);
+}
+function closeInvSheet() {
+  document.getElementById('inv-sheet').classList.remove('open');
+  document.getElementById('inv-overlay').classList.remove('open');
+}
+
+async function submitInvestment() {
+  const amt  = parseFloat(document.getElementById('inv-amt').value);
+  const note = document.getElementById('inv-note').value.trim();
+  if (!amt||amt<=0) { showToast('Ingresa un monto'); return; }
+  const inv = { id:Date.now(), date:todayStr(), amount:amt, asset:sAsset, notes:note,
+                btc_price_usd: sAsset==='BTC' && btcPriceUsd>0 ? btcPriceUsd : null };
+  investments.unshift(inv);
+  try { await sbInsert('investments', inv); } catch(e) { console.warn('Error saving investment', e); }
+  document.getElementById('inv-amt').value  = '';
+  document.getElementById('inv-note').value = '';
+  sAsset = 'BTC';
+  closeInvSheet();
+  showToast('Inversión registrada ✓');
+  renderInvestments();
+}
 function openSheet() {
   document.getElementById('sheet').classList.add('open');
   document.getElementById('overlay').classList.add('open');
@@ -1416,24 +1468,19 @@ function renderInvestments() {
 
   // BTC ROI calculation
   const btcInvs = investments.filter(i=>i.asset==='BTC' && i.btc_price_usd);
-  let roiHtml = '—';
   if (btcInvs.length && btcPriceUsd > 0) {
-    let totalBtcUnits = 0;
-    let totalBtcInvested = 0;
+    let totalBtcUnits = 0, totalBtcInvested = 0;
     btcInvs.forEach(i => {
-      const units = i.amount / (i.btc_price_usd * (usdClp||1));
-      totalBtcUnits += units;
+      totalBtcUnits    += i.amount / (i.btc_price_usd * (usdClp||1));
       totalBtcInvested += i.amount;
     });
-    const currentVal = totalBtcUnits * btcPriceUsd * usdClp;
-    const gain = currentVal - totalBtcInvested;
-    const pct = (gain / totalBtcInvested * 100).toFixed(1);
+    const gain = totalBtcUnits * btcPriceUsd * usdClp - totalBtcInvested;
     const roiEl = document.getElementById('inv-roi');
     roiEl.textContent = (gain>=0?'+':'')+fmtS(gain);
-    roiEl.className = 'inv-sum-val ' + (gain>=0?'pos':'neg');
+    roiEl.className   = 'inv-sum-val ' + (gain>=0?'pos':'neg');
   } else {
     document.getElementById('inv-roi').textContent = '—';
-    document.getElementById('inv-roi').className = 'inv-sum-val';
+    document.getElementById('inv-roi').className   = 'inv-sum-val';
   }
 
   const listEl = document.getElementById('inv-list');
@@ -1441,73 +1488,106 @@ function renderInvestments() {
     listEl.innerHTML = `<div style="padding:14px 0;color:var(--sub);font-size:13px;text-align:center">Sin inversiones registradas</div>`;
     return;
   }
+
+  const pfx = 'inv-list';
   listEl.innerHTML = investments.slice(0,5).map(inv => {
     const a = getAsset(inv.asset);
     let roiTxt = '';
     if (inv.asset==='BTC' && inv.btc_price_usd && btcPriceUsd>0) {
-      const units = inv.amount / (inv.btc_price_usd * (usdClp||1));
+      const units  = inv.amount / (inv.btc_price_usd * (usdClp||1));
       const curVal = units * btcPriceUsd * usdClp;
-      const g = curVal - inv.amount;
+      const g  = curVal - inv.amount;
       const gp = (g/inv.amount*100).toFixed(1);
       roiTxt = `<div class="inv-roi ${g>=0?'pos':'neg'}">${g>=0?'▲':'▼'} ${Math.abs(gp)}% retorno</div>`;
     }
-    return `<div class="inv-item">
-      <div class="inv-icon" style="background:${a.bg}">${a.emoji}</div>
-      <div class="inv-info">
-        <div class="inv-name">${inv.notes||a.name}</div>
-        <div class="inv-date">${a.name} · ${inv.date}</div>
+    return `<div class="swipe-wrap" id="swrap-${pfx}-${inv.id}" style="border-radius:12px">
+      <div class="swipe-actions">
+        <div class="swipe-action-left" id="sa-left-${pfx}-${inv.id}" style="border-radius:12px 0 0 12px">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </div>
+        <div class="swipe-action-right" id="sa-right-${pfx}-${inv.id}" style="border-radius:0 12px 12px 0">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+        </div>
       </div>
-      <div class="inv-right">
-        <div class="inv-amt">${fmtF(inv.amount)}</div>
-        ${roiTxt}
+      <div class="swipe-card" id="scard-${pfx}-${inv.id}" style="border-radius:12px">
+        <div class="inv-icon" style="background:${a.bg}">${a.emoji}</div>
+        <div class="inv-info">
+          <div class="inv-name">${inv.notes||a.name}</div>
+          <div class="inv-date">${a.name} · ${inv.date}</div>
+        </div>
+        <div class="inv-right">
+          <div class="inv-amt">${fmtF(inv.amount)}</div>
+          ${roiTxt}
+        </div>
       </div>
     </div>`;
   }).join('');
+
+  investments.slice(0,5).forEach(inv => attachSwipe(inv.id, pfx, 'inv'));
 }
 
-// Investment sheet
-function renderAssetGrid() {
-  document.getElementById('asset-grid').innerHTML = ASSETS.map(a=>`
-    <button class="asset-chip ${sAsset===a.id?'sel':''}" onclick="sAsset='${a.id}';renderAssetGrid()">
+// ── Delete investment ──────────────────────────────────────────────────────────────
+async function deleteInvestment(id) {
+  investments = investments.filter(i => i.id !== id);
+  try { await sbDelete('investments', id); setSyncStatus('ok'); }
+  catch(e) { setSyncStatus('err'); }
+  renderInvestments();
+  showToast('Inversión eliminada');
+}
+
+// ── Edit investment sheet ──────────────────────────────────────────────────────
+let editInvId  = null;
+let editInvAsset = 'BTC';
+
+function openEditInvSheet(id) {
+  const inv = investments.find(i => i.id === id);
+  if (!inv) return;
+  editInvId    = id;
+  editInvAsset = inv.asset;
+  document.getElementById('edit-inv-amt').value  = inv.amount;
+  document.getElementById('edit-inv-note').value = inv.notes || '';
+  renderEditAssetGrid();
+  document.getElementById('edit-inv-overlay').classList.add('open');
+  document.getElementById('edit-inv-sheet').classList.add('open');
+  setTimeout(() => document.getElementById('edit-inv-amt').focus(), 300);
+}
+
+function closeEditInvSheet() {
+  document.getElementById('edit-inv-overlay').classList.remove('open');
+  document.getElementById('edit-inv-sheet').classList.remove('open');
+  editInvId = null;
+}
+
+function renderEditAssetGrid() {
+  document.getElementById('edit-asset-grid').innerHTML = ASSETS.map(a => `
+    <button class="asset-chip ${editInvAsset===a.id?'sel':''}" onclick="editInvAsset='${a.id}';renderEditAssetGrid()">
       <span style="font-family:'Apple Color Emoji',sans-serif">${a.emoji}</span> ${a.name}
     </button>`).join('');
 }
 
-function openInvSheet() {
-  document.getElementById('inv-sheet').classList.add('open');
-  document.getElementById('inv-overlay').classList.add('open');
-  renderAssetGrid();
-  setTimeout(()=>document.getElementById('inv-amt').focus(), 300);
-}
-function closeInvSheet() {
-  document.getElementById('inv-sheet').classList.remove('open');
-  document.getElementById('inv-overlay').classList.remove('open');
-}
+async function saveInvEdit() {
+  const amt  = parseFloat(document.getElementById('edit-inv-amt').value);
+  const note = document.getElementById('edit-inv-note').value.trim();
+  if (!amt || amt <= 0) { showToast('Ingresa un monto válido'); return; }
 
-async function submitInvestment() {
-  const amt = parseFloat(document.getElementById('inv-amt').value);
-  const note = document.getElementById('inv-note').value.trim();
-  if (!amt||amt<=0) { showToast('Ingresa un monto'); return; }
+  const idx = investments.findIndex(i => i.id === editInvId);
+  if (idx === -1) return;
 
-  const inv = {
-    id: Date.now(),
-    date: todayStr(),
-    amount: amt,
-    asset: sAsset,
-    notes: note,
-    btc_price_usd: sAsset==='BTC' && btcPriceUsd > 0 ? btcPriceUsd : null
-  };
+  investments[idx] = { ...investments[idx], asset: editInvAsset, amount: amt, notes: note };
 
-  investments.unshift(inv);
   try {
-    await sbInsert('investments', inv);
-  } catch(e) { console.warn('Error saving investment', e); }
+    setSyncStatus('loading');
+    await sbFetch(`/rest/v1/investments?id=eq.${editInvId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ asset: editInvAsset, amount: amt, notes: note })
+    });
+    setSyncStatus('ok');
+  } catch(e) {
+    setSyncStatus('err');
+  }
 
-  document.getElementById('inv-amt').value = '';
-  document.getElementById('inv-note').value = '';
-  sAsset = 'BTC';
-  closeInvSheet();
-  showToast('Inversión registrada ✓');
+  closeEditInvSheet();
+  showToast('Inversión guardada ✓');
   renderInvestments();
 }
 
