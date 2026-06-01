@@ -329,9 +329,99 @@ html,body { height:100%; background:#f5f2ee !important; color:#1c1a17 !important
 .loading-logo { font-size:28px; font-weight:700; letter-spacing:-.6px; }
 .loading-spinner { width:20px; height:20px; border:2px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin .7s linear infinite; }
 @keyframes spin { to { transform:rotate(360deg); } }
+
+/* ── AUTH / LOGIN SCREEN ──────────────────────────────────────────────────── */
+.auth-screen {
+  position:fixed; inset:0; background:var(--bg); z-index:500;
+  display:flex; align-items:center; justify-content:center;
+  padding:24px;
+  transition:opacity .35s cubic-bezier(.4,0,.2,1), transform .35s cubic-bezier(.4,0,.2,1);
+}
+.auth-screen.hiding {
+  opacity:0;
+  transform:scale(.97);
+  pointer-events:none;
+}
+.auth-box {
+  width:100%; max-width:340px;
+  display:flex; flex-direction:column; align-items:center; gap:0;
+}
+.auth-logo {
+  font-size:32px; font-weight:700; letter-spacing:-.8px;
+  color:var(--text); margin-bottom:6px;
+}
+.auth-tagline {
+  font-size:13px; color:var(--sub); font-weight:400;
+  margin-bottom:36px; text-align:center;
+}
+.auth-card {
+  width:100%; background:var(--white);
+  border:1px solid var(--border); border-radius:22px;
+  padding:26px 22px 22px;
+  display:flex; flex-direction:column; gap:12px;
+}
+.auth-mode-tabs {
+  display:flex; gap:0; margin-bottom:4px;
+  background:var(--pill); border-radius:10px; padding:3px;
+}
+.auth-tab {
+  flex:1; padding:8px; border:none; background:none;
+  font-family:var(--f); font-size:13px; font-weight:600;
+  color:var(--sub); border-radius:8px; cursor:pointer;
+  transition:all .15s;
+}
+.auth-tab.active {
+  background:var(--white); color:var(--text);
+  box-shadow:0 1px 4px rgba(28,26,23,.10);
+}
+.auth-field {
+  width:100%; border:1.5px solid var(--border); border-radius:12px;
+  padding:13px 14px; font-family:var(--f); font-size:15px;
+  color:var(--text); background:var(--bg); outline:none;
+  transition:border-color .15s;
+  -webkit-text-fill-color: var(--text);
+}
+.auth-field:focus { border-color:var(--accent); }
+.auth-field::placeholder { color:var(--sub2); }
+.auth-btn {
+  width:100%; padding:15px; background:var(--accent);
+  color:var(--white); border:none; border-radius:14px;
+  font-family:var(--f); font-size:15px; font-weight:700;
+  cursor:pointer; margin-top:4px; letter-spacing:-.1px;
+  transition:opacity .12s, transform .12s;
+}
+.auth-btn:active { opacity:.88; transform:scale(.98); }
+.auth-btn:disabled { opacity:.5; cursor:not-allowed; }
+.auth-error {
+  font-size:12px; color:var(--red); font-weight:500;
+  text-align:center; min-height:16px; transition:opacity .2s;
+}
+.auth-hint {
+  font-size:11px; color:var(--sub2); text-align:center;
+  padding-top:4px; line-height:1.5;
+}
 </style>
 </head>
 <body>
+
+<!-- AUTH SCREEN -->
+<div class="auth-screen" id="auth-screen" style="display:none">
+  <div class="auth-box">
+    <div class="auth-logo">parker</div>
+    <div class="auth-tagline">Seguimiento de gastos personal</div>
+    <div class="auth-card">
+      <div class="auth-mode-tabs">
+        <button class="auth-tab active" id="tab-login" onclick="switchAuthMode('login')">Entrar</button>
+        <button class="auth-tab" id="tab-signup" onclick="switchAuthMode('signup')">Crear cuenta</button>
+      </div>
+      <input class="auth-field" type="email" id="auth-email" placeholder="Correo" autocomplete="email" inputmode="email">
+      <input class="auth-field" type="password" id="auth-password" placeholder="Contraseña" autocomplete="current-password">
+      <div class="auth-error" id="auth-error"></div>
+      <button class="auth-btn" id="auth-submit" onclick="handleAuth()">Entrar</button>
+      <div class="auth-hint" id="auth-hint">Tu sesión se mantendrá activa 30 días</div>
+    </div>
+  </div>
+</div>
 
 <!-- LOADING -->
 <div class="loading-screen" id="loading-screen">
@@ -502,6 +592,18 @@ html,body { height:100%; background:#f5f2ee !important; color:#1c1a17 !important
       <div class="sv-row">
         <div class="sv-row-left">
           <div class="sv-row-icon" style="background:#f5ecec">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" stroke="#c9746a"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          </div>
+          <div>
+            <div class="sv-row-label">Cerrar sesión</div>
+            <div class="sv-row-sub" id="session-user-email">—</div>
+          </div>
+        </div>
+        <button class="sv-row-btn danger" onclick="handleSignOut()">Salir</button>
+      </div>
+      <div class="sv-row">
+        <div class="sv-row-left">
+          <div class="sv-row-icon" style="background:#f5ecec">
             <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" stroke="#c9746a"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
           </div>
           <div>
@@ -650,10 +752,175 @@ html,body { height:100%; background:#f5f2ee !important; color:#1c1a17 !important
 // ── Supabase Config ──────────────────────────────────────────────────────────
 const SB_URL = 'https://imarpbqmqgboghxuqqlk.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImltYXJwYnFtcWdib2doeHVxcWxrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk3NDE1NTAsImV4cCI6MjA5NTMxNzU1MH0.ejJQcaFBmcG_fSXspsQulXCKnfLWFykAX0H1IzKLEO8';
+const SB_SESSION_KEY = 'pk3_session';
 
+// ── Auth session ─────────────────────────────────────────────────────────────
+let currentSession = null; // { access_token, refresh_token, user: { id, email } }
+
+function getAccessToken() {
+  return currentSession?.access_token || SB_KEY;
+}
+function getCurrentUserId() {
+  return currentSession?.user?.id || null;
+}
+
+function saveSession(session) {
+  currentSession = session;
+  localStorage.setItem(SB_SESSION_KEY, JSON.stringify({
+    access_token:  session.access_token,
+    refresh_token: session.refresh_token,
+    expires_at:    Date.now() + (session.expires_in || 3600) * 1000,
+    user:          { id: session.user.id, email: session.user.email }
+  }));
+}
+
+function clearSession() {
+  currentSession = null;
+  localStorage.removeItem(SB_SESSION_KEY);
+}
+
+async function loadStoredSession() {
+  try {
+    const raw = localStorage.getItem(SB_SESSION_KEY);
+    if (!raw) return false;
+    const stored = JSON.parse(raw);
+    // Try to refresh if close to expiry (within 5 min)
+    if (Date.now() > stored.expires_at - 300000) {
+      const refreshed = await authFetch('/token?grant_type=refresh_token', { refresh_token: stored.refresh_token });
+      saveSession(refreshed);
+      return true;
+    }
+    currentSession = stored;
+    return true;
+  } catch(e) {
+    clearSession();
+    return false;
+  }
+}
+
+async function authFetch(path, body) {
+  const res = await fetch(SB_URL + '/auth/v1' + path, {
+    method: 'POST',
+    headers: { 'apikey': SB_KEY, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error_description || data.msg || 'Error de autenticación');
+  return data;
+}
+
+async function signIn(email, password) {
+  const data = await authFetch('/token?grant_type=password', { email, password });
+  saveSession(data);
+  return data;
+}
+
+async function signUp(email, password) {
+  const data = await authFetch('/signup', { email, password });
+  if (data.access_token) saveSession(data); // auto-login if email confirm is off
+  return data;
+}
+
+async function signOut() {
+  try {
+    await fetch(SB_URL + '/auth/v1/logout', {
+      method: 'POST',
+      headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + getAccessToken() }
+    });
+  } catch(e) {}
+  clearSession();
+}
+
+// ── Auth UI ──────────────────────────────────────────────────────────────────
+let authMode = 'login'; // 'login' | 'signup'
+
+function showAuthScreen() {
+  const screen = document.getElementById('auth-screen');
+  screen.style.display = 'flex';
+  screen.classList.remove('hiding');
+  document.getElementById('auth-email').focus();
+}
+
+function hideAuthScreen() {
+  const screen = document.getElementById('auth-screen');
+  screen.classList.add('hiding');
+  setTimeout(() => screen.style.display = 'none', 380);
+}
+
+function switchAuthMode(mode) {
+  authMode = mode;
+  document.getElementById('tab-login').classList.toggle('active', mode === 'login');
+  document.getElementById('tab-signup').classList.toggle('active', mode === 'signup');
+  document.getElementById('auth-submit').textContent = mode === 'login' ? 'Entrar' : 'Crear cuenta';
+  document.getElementById('auth-hint').textContent = mode === 'login'
+    ? 'Tu sesión se mantendrá activa 30 días'
+    : 'Podrás iniciar sesión desde cualquier dispositivo';
+  document.getElementById('auth-error').textContent = '';
+  document.getElementById('auth-password').autocomplete = mode === 'login' ? 'current-password' : 'new-password';
+}
+
+async function handleAuth() {
+  const email    = document.getElementById('auth-email').value.trim();
+  const password = document.getElementById('auth-password').value;
+  const errEl    = document.getElementById('auth-error');
+  const btn      = document.getElementById('auth-submit');
+
+  if (!email || !password) { errEl.textContent = 'Completa todos los campos'; return; }
+  if (password.length < 6) { errEl.textContent = 'La contraseña debe tener al menos 6 caracteres'; return; }
+
+  btn.disabled = true;
+  btn.textContent = '…';
+  errEl.textContent = '';
+
+  try {
+    if (authMode === 'login') {
+      await signIn(email, password);
+    } else {
+      await signUp(email, password);
+    }
+    // Update session user email display in settings
+    updateSessionEmailUI();
+    hideAuthScreen();
+    await init();
+  } catch(e) {
+    let msg = e.message || 'Error';
+    if (msg.includes('Invalid login')) msg = 'Correo o contraseña incorrectos';
+    if (msg.includes('already registered')) msg = 'Este correo ya tiene una cuenta';
+    if (msg.includes('Email not confirmed')) msg = 'Verifica tu correo primero';
+    errEl.textContent = msg;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = authMode === 'login' ? 'Entrar' : 'Crear cuenta';
+  }
+}
+
+async function handleSignOut() {
+  await signOut();
+  // Reset app state
+  txns = []; budget = 0; investments = [];
+  profile = { name: '', avatar: '🦁' };
+  showAuthScreen();
+}
+
+function updateSessionEmailUI() {
+  const el = document.getElementById('session-user-email');
+  if (el && currentSession?.user?.email) {
+    el.textContent = currentSession.user.email;
+  }
+}
+
+// Handle Enter key on login form
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && document.getElementById('auth-screen')?.style.display !== 'none') {
+    handleAuth();
+  }
+});
+
+// ── Supabase REST helpers ─────────────────────────────────────────────────────
 async function sbFetch(path, opts={}) {
+  const token = getAccessToken();
   const res = await fetch(SB_URL + path, {
-    headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=representation', ...opts.headers },
+    headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json', 'Prefer': 'return=representation', ...opts.headers },
     ...opts
   });
   if (!res.ok) throw new Error(await res.text());
@@ -671,10 +938,14 @@ async function sbDelete(table, id) {
   return sbFetch(`/rest/v1/${table}?id=eq.${id}`, { method:'DELETE' });
 }
 async function sbUpsertConfig(key, value) {
-  return sbFetch(`/rest/v1/config`, { method:'POST', headers:{'Prefer':'resolution=merge-duplicates,return=representation'}, body: JSON.stringify({key, value}) });
+  const uid = getCurrentUserId();
+  const payload = uid ? { key, value, user_id: uid } : { key, value };
+  return sbFetch(`/rest/v1/config`, { method:'POST', headers:{'Prefer':'resolution=merge-duplicates,return=representation'}, body: JSON.stringify(payload) });
 }
 async function sbGetConfig(key) {
-  const r = await sbGet('config', `key=eq.${key}&select=value`);
+  const uid = getCurrentUserId();
+  const filter = uid ? `key=eq.${key}&user_id=eq.${uid}&select=value` : `key=eq.${key}&select=value`;
+  const r = await sbGet('config', filter);
   return r.length ? r[0].value : null;
 }
 
@@ -1138,8 +1409,10 @@ async function submitInvestment() {
   const amt  = parseFloat(document.getElementById('inv-amt').value);
   const note = document.getElementById('inv-note').value.trim();
   if (!amt||amt<=0) { showToast('Ingresa un monto'); return; }
+  const uid = getCurrentUserId();
   const inv = { id:Date.now(), date:todayStr(), amount:amt, asset:sAsset, notes:note,
-                btc_price_usd: sAsset==='BTC' && btcPriceUsd>0 ? btcPriceUsd : null };
+                btc_price_usd: sAsset==='BTC' && btcPriceUsd>0 ? btcPriceUsd : null,
+                ...(uid ? {user_id: uid} : {}) };
   investments.unshift(inv);
   try { await sbInsert('investments', inv); } catch(e) { console.warn('Error saving investment', e); }
   document.getElementById('inv-amt').value  = '';
@@ -1173,7 +1446,8 @@ async function submitTxn() {
   const amt=parseFloat(document.getElementById('s-amt').value);
   const note=document.getElementById('s-note').value.trim();
   if (!amt||amt<=0){showToast('Ingresa un monto');return;}
-  const txn = {id:Date.now(),type:sType,cat:sCat,amount:amt,note,date:todayStr()};
+  const uid = getCurrentUserId();
+  const txn = {id:Date.now(),type:sType,cat:sCat,amount:amt,note,date:todayStr(),...(uid?{user_id:uid}:{})};
   txns.push(txn);
   try {
     setSyncStatus('loading');
@@ -1593,7 +1867,20 @@ async function saveInvEdit() {
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
 renderSheetCats();
-init();
+
+(async () => {
+  const hasSession = await loadStoredSession();
+  if (hasSession) {
+    updateSessionEmailUI();
+    await init();
+  } else {
+    // Hide loading, show auth
+    const ls = document.getElementById('loading-screen');
+    ls.classList.add('hidden');
+    setTimeout(() => ls.style.display = 'none', 400);
+    showAuthScreen();
+  }
+})();
 
 // ── Auto-refresh when PWA comes back to foreground ───────────────────────────
 document.addEventListener('visibilitychange', () => {
