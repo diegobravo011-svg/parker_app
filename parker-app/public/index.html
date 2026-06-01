@@ -400,6 +400,16 @@ html,body { height:100%; background:#f5f2ee !important; color:#1c1a17 !important
   font-size:11px; color:var(--sub2); text-align:center;
   padding-top:4px; line-height:1.5;
 }
+.auth-name-wrap {
+  overflow:hidden;
+  max-height:0;
+  opacity:0;
+  transition:max-height .25s cubic-bezier(.4,0,.2,1), opacity .2s;
+}
+.auth-name-wrap.visible {
+  max-height:60px;
+  opacity:1;
+}
 </style>
 </head>
 <body>
@@ -416,9 +426,12 @@ html,body { height:100%; background:#f5f2ee !important; color:#1c1a17 !important
       </div>
       <input class="auth-field" type="email" id="auth-email" placeholder="Correo" autocomplete="email" inputmode="email">
       <input class="auth-field" type="password" id="auth-password" placeholder="Contraseña" autocomplete="current-password">
+      <div class="auth-name-wrap" id="auth-name-wrap">
+        <input class="auth-field" type="text" id="auth-name" placeholder="Tu nombre" autocomplete="name" maxlength="30" style="margin-top:0">
+      </div>
       <div class="auth-error" id="auth-error"></div>
       <button class="auth-btn" id="auth-submit" onclick="handleAuth()">Entrar</button>
-      <div class="auth-hint" id="auth-hint">Tu sesión se mantendrá activa 30 días</div>
+      <div class="auth-hint" id="auth-hint">Tu sesión se mantiene activa mientras uses la app</div>
     </div>
   </div>
 </div>
@@ -853,20 +866,31 @@ function switchAuthMode(mode) {
   document.getElementById('tab-signup').classList.toggle('active', mode === 'signup');
   document.getElementById('auth-submit').textContent = mode === 'login' ? 'Entrar' : 'Crear cuenta';
   document.getElementById('auth-hint').textContent = mode === 'login'
-    ? 'Tu sesión se mantendrá activa 30 días'
-    : 'Podrás iniciar sesión desde cualquier dispositivo';
+    ? 'Tu sesión se mantiene activa mientras uses la app'
+    : 'Elige un nombre para identificarte dentro de la app';
   document.getElementById('auth-error').textContent = '';
   document.getElementById('auth-password').autocomplete = mode === 'login' ? 'current-password' : 'new-password';
+  // Show/hide name field
+  const nameWrap = document.getElementById('auth-name-wrap');
+  if (mode === 'signup') {
+    nameWrap.classList.add('visible');
+    setTimeout(() => document.getElementById('auth-name').focus(), 260);
+  } else {
+    nameWrap.classList.remove('visible');
+    document.getElementById('auth-name').value = '';
+  }
 }
 
 async function handleAuth() {
   const email    = document.getElementById('auth-email').value.trim();
   const password = document.getElementById('auth-password').value;
+  const nameVal  = (document.getElementById('auth-name').value || '').trim();
   const errEl    = document.getElementById('auth-error');
   const btn      = document.getElementById('auth-submit');
 
   if (!email || !password) { errEl.textContent = 'Completa todos los campos'; return; }
   if (password.length < 6) { errEl.textContent = 'La contraseña debe tener al menos 6 caracteres'; return; }
+  if (authMode === 'signup' && !nameVal) { errEl.textContent = 'Escribe tu nombre para continuar'; return; }
 
   btn.disabled = true;
   btn.textContent = '…';
@@ -877,8 +901,11 @@ async function handleAuth() {
       await signIn(email, password);
     } else {
       await signUp(email, password);
+      // Save the name right after signup (session is active)
+      if (nameVal && getCurrentUserId()) {
+        try { await sbUpsertConfig('username', nameVal); } catch(_) {}
+      }
     }
-    // Update session user email display in settings
     updateSessionEmailUI();
     hideAuthScreen();
     await init();
@@ -1000,7 +1027,8 @@ async function init() {
       sbGetConfig('avatar')
     ]);
     budget = parseFloat(bv||'0');
-    profile.name   = uname  || 'Fernanda';
+    // Fallback to email prefix if no name set yet
+    profile.name   = uname  || (currentSession?.user?.email?.split('@')[0] || '');
     profile.avatar = uavatar|| '🦁';
 
     setSyncStatus('ok');
